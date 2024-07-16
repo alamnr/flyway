@@ -1,0 +1,45 @@
+package com.alamnr.flyway.httpClient;
+
+import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+public class JavaHttpClient {
+
+    private static final String DEFAULT_QUOTE = "Lorem ipsum dolor sit amet.";
+    private final String baseUrl;
+
+    public JavaHttpClient(String url){
+        this.baseUrl = url;
+    }
+
+    public String getRandomQuote(){
+        HttpClient client = HttpClient.newHttpClient();
+
+        HttpRequest request = HttpRequest.newBuilder()
+                                    .uri(URI.create(baseUrl+"/qod"))
+                                    .header("Accept", "application/json")
+                                    .GET().build();
+        try {
+
+            HttpResponse<String> response = client.send(request,HttpResponse.BodyHandlers.ofString());
+            
+            if(response.statusCode() != 200){
+                return DEFAULT_QUOTE;
+            }
+            RandomQuoteResponse responseBody = new ObjectMapper()
+                                                .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+                                                .readValue(response.body(), RandomQuoteResponse.class);
+            return responseBody.getContents().getQuotes().get(0).getQuote();
+        } catch(IOException | InterruptedException e){
+            e.printStackTrace();
+            return DEFAULT_QUOTE;
+        }
+    }
+    
+}
